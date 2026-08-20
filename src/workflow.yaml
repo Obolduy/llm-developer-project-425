@@ -33,7 +33,17 @@ steps:
       promptTemplateId: fvtj7934dc0j8bkqja65
       message: '\("Составь короткий дайджест для оператора Help Desk по этим тикетам без ответа больше суток (сколько штук, по каким категориям, что особенно горит), 3-5 предложений: " + (.overdue | tostring))'
       auto_approve: true
-      output: '\({"digest": .Result, "overdue": .overdue})'
+      output: '\({"digest": .Result})'
+      next: notify_operator
+
+  notify_operator:
+    httpCall:
+      method: POST
+      url: 'https://functions.yandexcloud.net/d4eejupm34d0akhfr52c'
+      headers:
+        Content-Type: application/json
+      body: '\({"to": "soukmanuk@yandex.ru", "subject": "Help Desk: тикеты без ответа больше суток", "body": .digest})'
+      output: '\({})'
       next: mark_escalated
 
   mark_escalated:
@@ -51,16 +61,6 @@ steps:
         WHERE status = 'open'
           AND created_at < CurrentUtcTimestamp() - Interval('PT24H');
       mode: QUERY
-      output: '\({"digest": .digest})'
-      next: notify_operator
-
-  notify_operator:
-    httpCall:
-      method: POST
-      url: 'https://functions.yandexcloud.net/d4eejupm34d0akhfr52c'
-      headers:
-        Content-Type: application/json
-      body: '\({"to": "soukmanuk@yandex.ru", "subject": "Help Desk: тикеты без ответа больше суток", "body": .digest})'
       output: '\({})'
       next: finish_sent
 
