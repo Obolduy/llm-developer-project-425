@@ -34,7 +34,6 @@ def _mask_sensitive(text: str) -> str:
     return text
 
 
-
 _SUSPICIOUS_PATTERNS = [
     re.compile(r"ignore (all |)(previous |)instructions", re.IGNORECASE),
     re.compile(r"disregard (the |)(above|previous|system)", re.IGNORECASE),
@@ -78,7 +77,7 @@ def _classifier_says_injection(text: str) -> bool:
         )
         with urllib.request.urlopen(request, timeout=15) as response:
             body = json.loads(response.read())
-    except Exception as error:  # noqa: BLE001 — fail-open, см. докстринг; ловит и сбой _iam_token()
+    except Exception as error:  # noqa: BLE001 — классификатор недоступен => считаем текст безопасным (fail-open)
         print(f"[ydb-tickets] classifier-unavailable error={type(error).__name__}: {error}")
         return False
     for item in body.get("output", []):
