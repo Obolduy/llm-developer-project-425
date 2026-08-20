@@ -1,0 +1,31 @@
+- name: create_ticket
+  description: |
+    Завести новый тикет в Help Desk. Использовать, когда ответа в базе знаний
+    нет и пользователь согласен оставить обращение, либо явно просит завести
+    заявку/тикет.
+  input_json_schema: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"user_id":{"type":"string","description":"Email обратившегося"},"category":{"type":"string","enum":["bug","question","access","other"],"description":"Категория обращения"},"text":{"type":"string","description":"Текст обращения. PII маскируется автоматически на стороне функции."}},"required":["user_id","category","text"],"additionalProperties":false}'
+  action:
+    function_call:
+      function_id: d4ep5m60vtuqq9bei81r
+      tag: $latest
+
+- name: list_my_tickets
+  description: |
+    Показать ранее созданные тикеты этого пользователя. Использовать, когда
+    спрашивают про статус своих обращений.
+  input_json_schema: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"user_id":{"type":"string","description":"Email обратившегося"},"limit":{"type":"integer","minimum":1,"maximum":50,"default":20}},"required":["user_id"],"additionalProperties":false}'
+  action:
+    function_call:
+      function_id: d4ep5m60vtuqq9bei81r
+      tag: $latest
+
+- name: append_message
+  description: |
+    Сохранить реплику диалога в историю. Вызывать после каждого своего ответа
+    (role=assistant), чтобы диалог был виден при следующем обращении того же
+    пользователя.
+  input_json_schema: '{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","properties":{"user_id":{"type":"string","description":"Email участника переписки"},"ticket_id":{"type":"string","description":"ID тикета, если реплика относится к тикету"},"role":{"type":"string","enum":["user","assistant"]},"text":{"type":"string"}},"required":["user_id","role","text"],"additionalProperties":false}'
+  action:
+    function_call:
+      function_id: d4ep5m60vtuqq9bei81r
+      tag: $latest
