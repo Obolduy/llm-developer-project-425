@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Local secrets / environment
+.env
+.env.*
+!.env.example
+
+# Yandex Cloud service account keys — must never be committed
+authorized_key.json
+*-authorized-key.json
+
+# Packaging artifacts for Cloud Functions deploys
+*.zip
+
+# OS / editor cruft
+.DS_Store
+.idea/

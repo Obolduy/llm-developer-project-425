@@ -1,0 +1,71 @@
+yawl: "0.1"
+start: find_overdue
+
+steps:
+  find_overdue:
+    databaseQuery:
+      connection:
+        type: YDB
+        host: ydb.serverless.yandexcloud.net
+        port: 2135
+        database: /ru-central1/b1gm0bpj948uoq5rshd0/etn3pu2fannmc0gk406g
+        ssl: true
+        iam: true
+      query: |
+        SELECT id, user_id, category, text, created_at
+        FROM tickets
+        WHERE status = 'open'
+          AND created_at < CurrentUtcTimestamp() - Interval('PT24H');
+      mode: QUERY
+      output: '\({"overdue": .ResultSets[0]})'
+      next: has_overdue
+
+  has_overdue:
+    switch:
+      choices:
+        - condition: .overdue | length > 0
+          next: build_digest
+        - condition: "true"
+          next: finish_nothing_overdue
+
+  build_digest:
+    aiStudioAgent:
+      promptTemplateId: fvtj7934dc0j8bkqja65
+      message: '\("Составь короткий дайджест для оператора Help Desk по этим тикетам без ответа больше суток (сколько штук, по каким категориям, что особенно горит), 3-5 предложений: " + (.overdue | tostring))'
+      auto_approve: true
+      output: '\({"digest": .Result})'
+      next: notify_operator
+
+  notify_operator:
+    httpCall:
+      method: POST
+      url: 'https://functions.yandexcloud.net/d4eejupm34d0akhfr52c'
+      headers:
+        Content-Type: application/json
+      body: '\({"to": "soukmanuk@yandex.ru", "subject": "Help Desk: тикеты без ответа больше суток", "body": .digest})'
+      output: '\({})'
+      next: mark_escalated
+
+  mark_escalated:
+    databaseQuery:
+      connection:
+        type: YDB
+        host: ydb.serverless.yandexcloud.net
+        port: 2135
+        database: /ru-central1/b1gm0bpj948uoq5rshd0/etn3pu2fannmc0gk406g
+        ssl: true
+        iam: true
+      query: |
+        UPDATE tickets
+        SET status = 'escalated', updated_at = CurrentUtcTimestamp()
+        WHERE status = 'open'
+          AND created_at < CurrentUtcTimestamp() - Interval('PT24H');
+      mode: QUERY
+      output: '\({})'
+      next: finish_sent
+
+  finish_nothing_overdue:
+    success: {}
+
+  finish_sent:
+    success: {}
